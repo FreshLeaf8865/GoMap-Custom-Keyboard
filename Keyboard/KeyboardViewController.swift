@@ -1,4 +1,4 @@
-//
+	//
 //  KeyboardViewController.swift
 //  Keyboard
 //
@@ -22,6 +22,8 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
         ["z", "x", "c", "v", "b", "n", "m"]
     ]
     
+    private let shortWord = ["Calle","Avenida","Callejón","Boulevard","Senda","Pasaje","Peatón"]
+    
     lazy var suggestionProvider: SuggestionProvider = SuggestionTrie()
     
     lazy var languageProviders = CircularArray(items: [DefaultLanguageProvider(), SwiftLanguageProvider()] as [LanguageProvider])
@@ -33,13 +35,16 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
     }
     private var keyboardHeight: CGFloat {
         let interfaceOrientation = UIDevice.currentDevice().orientation
-        return (interfaceOrientation == .Portrait || interfaceOrientation == .PortraitUpsideDown) ? 360.0 : 320.0
+        return (interfaceOrientation == .Portrait || interfaceOrientation == .PortraitUpsideDown) ? 300.0 : 260.0
     }
     private var keyWidth: CGFloat {
         return (view.frame.width - 11 * spacing) / 10.0
     }
+    private var wordKeyWidth: CGFloat {
+        return (view.frame.width - 8 * spacing) / 7.0
+    }
     private var keyHeight: CGFloat {
-        return (keyboardHeight - 7 * spacing - predictiveTextBoxHeight) / 6.0
+        return (keyboardHeight - 7 * spacing) / 6.0
     }
     
     // MARK: User interface
@@ -60,6 +65,9 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
     private var spaceButton: KeyButton!
     private var returnButton: KeyButton!
     private var currentLanguageLabel: UILabel!
+    private var oopButton: KeyButton!
+    private var numpadButton: KeyButton!
+    private var shortWordButton: KeyButton!
 
     // MARK: Timers
     
@@ -243,11 +251,6 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
         proxy.deleteBackward()
     }
     
-    // Input the character "ñ" instead of tab
-    func tabButtonPressed(sender: KeyButton) {
-        proxy.insertText("ñ")
-    }
-    
     func spaceButtonPressed(sender: KeyButton) {
         for suffix in languageProvider.autocapitalizeAfter {
             if proxy.documentContextBeforeInput!.hasSuffix(suffix) {
@@ -256,6 +259,27 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
         }
         proxy.insertText(" ")
         updateSuggestions()
+    }
+    
+    // Input the character "ñ" instead of tab
+    func tabButtonPressed(sender: KeyButton) {
+        proxy.insertText("ñ")
+    }
+    
+    // Input the character ""
+    func oopButtonPressed(sender: KeyButton) {
+        proxy.insertText("ó")
+    }
+    
+    // When the numpadButton is pressed
+    func numpadButtonPressed(sender: KeyButton){
+        proxy.insertText(sender.currentTitle!)
+    }
+    
+    // When the shortWordButton is pressed
+    func shortWordButtonPressed(sender: KeyButton){
+        proxy.insertText(sender.currentTitle!)
+        proxy.insertText(" ")
     }
     
     func handleLongPressForSpaceButtonWithGestureRecognizer(gestureRecognizer: UISwipeGestureRecognizer) {
@@ -381,11 +405,14 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
         addShiftButton()
         addDeleteButton()
         addTabButton()
+        addOopButton()
         addNextKeyboardButton()
         addSpaceButton()
         addReturnButton()
         addCharacterButtons()
         addSwipeView()
+        addShortWordButton()
+        addNumpadButton()
     }
     
     private func addPredictiveTextScrollView() {
@@ -394,14 +421,14 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
     }
     
     private func addShiftButton() {
-        shiftButton = KeyButton(frame: CGRectMake(spacing, keyHeight * 2.0 + spacing * 3.0 + predictiveTextBoxHeight, keyWidth * 1.5 + spacing * 0.5, keyHeight))
+        shiftButton = KeyButton(frame: CGRectMake(spacing, keyHeight * 4.0 + spacing * 5.0, keyWidth * 1.5 + spacing * 0.5, keyHeight))
         shiftButton.setTitle("\u{000021E7}", forState: .Normal)
         shiftButton.addTarget(self, action: "shiftButtonPressed:", forControlEvents: .TouchUpInside)
         self.view.addSubview(shiftButton)
     }
     
     private func addDeleteButton() {
-        deleteButton = KeyButton(frame: CGRectMake(keyWidth * 8.5 + spacing * 9.5, keyHeight * 2.0 + spacing * 3.0 + predictiveTextBoxHeight, keyWidth * 1.5, keyHeight))
+        deleteButton = KeyButton(frame: CGRectMake(keyWidth * 8.5 + spacing * 9.5, keyHeight * 4.0 + spacing * 5.0, keyWidth * 1.5, keyHeight))
         deleteButton.setTitle("\u{0000232B}", forState: .Normal)
         deleteButton.addTarget(self, action: "deleteButtonPressed:", forControlEvents: .TouchUpInside)
         self.view.addSubview(deleteButton)
@@ -415,46 +442,54 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
     }
     
     private func addTabButton() {
-        tabButton = KeyButton(frame: CGRectMake(spacing, keyHeight * 3.0 + spacing * 4.0 + predictiveTextBoxHeight, keyWidth * 1.5 + spacing * 0.5, keyHeight))
-        tabButton.setTitle("tab", forState: .Normal)
+        tabButton = KeyButton(frame: CGRectMake(spacing, keyHeight * 5.0 + spacing * 6.0, keyWidth, keyHeight))
+        tabButton.setTitle("ñ", forState: .Normal)
         tabButton.addTarget(self, action: "tabButtonPressed:", forControlEvents: .TouchUpInside)
         self.view.addSubview(tabButton)
     }
     
+    private func addOopButton() {
+        oopButton = KeyButton(frame: CGRectMake(spacing * 2 + keyWidth, keyHeight * 5.0 + spacing * 6.0, keyWidth, keyHeight))
+        oopButton.setTitle("ó", forState: .Normal)
+        oopButton.addTarget(self, action: "oopButtonPressed:", forControlEvents: .TouchUpInside)
+        self.view.addSubview(oopButton)
+    }
+    
     private func addNextKeyboardButton() {
-        nextKeyboardButton = KeyButton(frame: CGRectMake(keyWidth * 1.5 + spacing * 2.5, keyHeight * 3.0 + spacing * 4.0 + predictiveTextBoxHeight, keyWidth, keyHeight))
+        nextKeyboardButton = KeyButton(frame: CGRectMake(keyWidth * 2 + spacing * 3, keyHeight * 5.0 + spacing * 6.0, keyWidth, keyHeight))
         nextKeyboardButton.setTitle("\u{0001F310}", forState: .Normal)
         nextKeyboardButton.addTarget(self, action: "advanceToNextInputMode", forControlEvents: .TouchUpInside)
         self.view.addSubview(nextKeyboardButton)
     }
     
     private func addSpaceButton() {
-        spaceButton = KeyButton(frame: CGRectMake(keyWidth * 2.5 + spacing * 3.5, keyHeight * 3.0 + spacing * 4.0 + predictiveTextBoxHeight, keyWidth * 5.0 + spacing * 4.0, keyHeight))
+        spaceButton = KeyButton(frame: CGRectMake(keyWidth * 3 + spacing * 4, keyHeight * 5.0 + spacing * 6.0, keyWidth * 4.5 + spacing * 3.5, keyHeight))
+        spaceButton.setTitle("Space", forState: .Normal)
         spaceButton.addTarget(self, action: "spaceButtonPressed:", forControlEvents: .TouchUpInside)
         self.view.addSubview(spaceButton)
         
-        currentLanguageLabel = UILabel(frame: CGRectMake(0.0, 0.0, spaceButton.frame.width, spaceButton.frame.height * 0.33))
-        currentLanguageLabel.font = UIFont(name: "HelveticaNeue", size: 12.0)
-        currentLanguageLabel.adjustsFontSizeToFitWidth = true
-        currentLanguageLabel.textColor = UIColor(white: 187.0/255, alpha: 1)
-        currentLanguageLabel.textAlignment = .Center
-        currentLanguageLabel.text = "\(languageProvider.language)"
-        spaceButton.addSubview(currentLanguageLabel)
-        
-        let spaceButtonLongPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "handleLongPressForSpaceButtonWithGestureRecognizer:")
-        spaceButton.addGestureRecognizer(spaceButtonLongPressGestureRecognizer)
-        
-        let spaceButtonSwipeLeftGestureRecognizer = UISwipeGestureRecognizer(target: self, action: "handleSwipeLeftForSpaceButtonWithGestureRecognizer:")
-        spaceButtonSwipeLeftGestureRecognizer.direction = .Left
-        spaceButton.addGestureRecognizer(spaceButtonSwipeLeftGestureRecognizer)
-        
-        let spaceButtonSwipeRightGestureRecognizer = UISwipeGestureRecognizer(target: self, action: "handleSwipeRightForSpaceButtonWithGestureRecognizer:")
-        spaceButtonSwipeRightGestureRecognizer.direction = .Right
-        spaceButton.addGestureRecognizer(spaceButtonSwipeRightGestureRecognizer)
+//        currentLanguageLabel = UILabel(frame: CGRectMake(0.0, 0.0, spaceButton.frame.width, spaceButton.frame.height * 0.33))
+//        currentLanguageLabel.font = UIFont(name: "HelveticaNeue", size: 12.0)
+//        currentLanguageLabel.adjustsFontSizeToFitWidth = true
+//        currentLanguageLabel.textColor = UIColor(white: 187.0/255, alpha: 1)
+//        currentLanguageLabel.textAlignment = .Center
+//        currentLanguageLabel.text = "\(languageProvider.language)"
+//        spaceButton.addSubview(currentLanguageLabel)
+//        
+//        let spaceButtonLongPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: "handleLongPressForSpaceButtonWithGestureRecognizer:")
+//        spaceButton.addGestureRecognizer(spaceButtonLongPressGestureRecognizer)
+//        
+//        let spaceButtonSwipeLeftGestureRecognizer = UISwipeGestureRecognizer(target: self, action: "handleSwipeLeftForSpaceButtonWithGestureRecognizer:")
+//        spaceButtonSwipeLeftGestureRecognizer.direction = .Left
+//        spaceButton.addGestureRecognizer(spaceButtonSwipeLeftGestureRecognizer)
+//        
+//        let spaceButtonSwipeRightGestureRecognizer = UISwipeGestureRecognizer(target: self, action: "handleSwipeRightForSpaceButtonWithGestureRecognizer:")
+//        spaceButtonSwipeRightGestureRecognizer.direction = .Right
+//        spaceButton.addGestureRecognizer(spaceButtonSwipeRightGestureRecognizer)
     }
     
     private func addReturnButton() {
-        returnButton = KeyButton(frame: CGRectMake(keyWidth * 7.5 + spacing * 8.5, keyHeight * 3.0 + spacing * 4.0 + predictiveTextBoxHeight, keyWidth * 2.5 + spacing, keyHeight))
+        returnButton = KeyButton(frame: CGRectMake(keyWidth * 7.5 + spacing * 8.5, keyHeight * 5.0 + spacing * 6.0, keyWidth * 2.5 + spacing, keyHeight))
         returnButton.setTitle("\u{000023CE}", forState: .Normal)
         returnButton.addTarget(self, action: "returnButtonPressed:", forControlEvents: .TouchUpInside)
         self.view.addSubview(returnButton)
@@ -467,7 +502,7 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
             []
         ] // Clear characterButtons array.
         
-        var y = spacing + predictiveTextBoxHeight
+        var y = spacing * 3 + keyHeight * 2
         for (rowIndex, row) in primaryCharacters.enumerate() {
             var x: CGFloat
             switch rowIndex {
@@ -479,12 +514,36 @@ class KeyboardViewController: UIInputViewController, CharacterButtonDelegate, Su
                 x = spacing
             }
             for (keyIndex, key) in row.enumerate() {
-                let characterButton = CharacterButton(frame: CGRectMake(x, y, keyWidth, keyHeight), primaryCharacter: key, secondaryCharacter: languageProvider.secondaryCharacters[rowIndex][keyIndex], tertiaryCharacter: languageProvider.tertiaryCharacters[rowIndex][keyIndex], delegate: self)
+                let characterButton = CharacterButton(frame: CGRectMake(x, y, keyWidth, keyHeight), primaryCharacter: key, secondaryCharacter: " ", tertiaryCharacter: " ", delegate: self)
                 self.view.addSubview(characterButton)
                 characterButtons[rowIndex].append(characterButton)
                 x += keyWidth + spacing
             }
             y += keyHeight + spacing
+        }
+    }
+    
+    private func addShortWordButton(){
+        for index in 1...7{
+            shortWordButton = KeyButton(frame: CGRectMake(spacing * CGFloat(index) + wordKeyWidth * CGFloat(index-1), spacing, wordKeyWidth, keyHeight))
+            shortWordButton.setTitle(shortWord[index-1], forState: .Normal)
+            shortWordButton.addTarget(self, action: "shortWordButtonPressed:", forControlEvents: .TouchUpInside)
+            self.view.addSubview(shortWordButton)
+        }
+    }
+    private func addNumpadButton(){
+        for index in 1...10{
+            print("\(index) times 5 is \(index * 5)")
+            numpadButton = KeyButton(frame: CGRectMake(spacing * CGFloat(index) + keyWidth * CGFloat(index-1), spacing * 2 + keyHeight, keyWidth, keyHeight))
+            if index == 10 {
+                numpadButton.setTitle("\(index - 10)", forState: .Normal)
+                }
+            else{
+            numpadButton.setTitle("\(index)", forState: .Normal)
+            }
+            
+            numpadButton.addTarget(self, action: "numpadButtonPressed:", forControlEvents: .TouchUpInside)
+            self.view.addSubview(numpadButton)
         }
     }
     
